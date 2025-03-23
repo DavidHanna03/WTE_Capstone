@@ -1,0 +1,241 @@
+import json
+from geopy.distance import geodesic
+import folium
+import requests  # For HTTP requests to OSRM
+
+# Load bin data from JSON file
+with open("bin_data.json", "r") as file:
+    bins = json.load(file)
+
+# Define fill level threshold for collection
+THRESHOLD = 80
+
+# Filter bins by fill level threshold
+selected_bins = [bin for bin in bins if bin["Fill Level"] > THRESHOLD]
+
+# OSRM Public Server URL
+OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving/"
+
+# Fuel and cost configurations
+FUEL_CONSUMPTION_PER_KM = 1  # Liters per kilometer (10L per 10 km)
+GAS_PRICE_PER_LITER = 1.579  # CAD (current Ontario gas price)
+LABOR_COST_PER_HOUR = 18  # CAD
+AVERAGE_SPEED_KMH = 40  # km/h
+
+# Function to calculate distance between two bins
+def calculate_distance(bin1, bin2):
+    coords_1 = (bin1["Latitude"], bin1["Longitude"])
+    coords_2 = (bin2["Latitude"], bin2["Longitude"])
+    return geodesic(coords_1, coords_2).kilometers
+
+# Function to calculate fuel costs, labor costs, and total time
+def calculate_costs(distance_km):
+    gas_cost = distance_km * FUEL_CONSUMPTION_PER_KM * GAS_PRICE_PER_LITER
+    time_hours = distance_km / AVERAGE_SPEED_KMH
+    labor_cost = time_hours * LABOR_COST_PER_HOUR
+    return gas_cost, labor_cost, time_hours
+
+# Nearest Neighbor Algorithm
+def nearest_neighbor(bins):
+    if not bins:
+        return [], 0  # No bins to process
+    
+    # Start with the first bin
+    unvisited = bins[:]
+    route = [unvisited.pop(0)]
+    total_distance = 0
+
+    while unvisited:
+        current_bin = route[-1]
+        # Find the nearest unvisited bin
+        nearest = min(unvisited, key=lambda bin: calculate_distance(current_bin, bin))
+        total_distance += calculate_distance(current_bin, nearest)
+        route.append(nearest)
+        unvisited.remove(nearest)
+
+    # Add distance back to the start point (optional, for a closed route)
+    total_distance += calculate_distance(route[-1], route[0])
+
+    return route, total_distance
+
+# 2-opt Algorithm to refine the route
+def two_opt(route, distance_func):
+    best_route = route
+    improved = True
+
+    while improved:
+        improved = False
+        for i in range(1, len(best_route) - 1):
+            for j in range(i + 1, len(best_route)):
+                # Swap two edges
+                new_route = (
+                    best_route[:i]
+                    + best_route[i:j + 1][::-1]
+                    + best_route[j + 1:]
+                )
+                # Calculate the new distance
+                old_distance = sum(
+                    distance_func(best_route[k], best_route[k + 1])
+                    for k in range(len(best_route) - 1)
+                )
+                new_distance = sum(
+                    distance_func(new_route[k], new_route[k + 1])
+                    for k in range(len(new_route) - 1)
+                )
+
+                # If the new route is better, update it
+                if new_distance < old_distance:
+                    best_route = new_route
+                    improved = True
+    return best_route
+
+# Run Nearest Neighbor and optimize with 2-opt
+if selected_bins:
+    initial_route, initial_distance = nearest_neighbor(selected_bins)
+    print("Initial Route (Nearest Neighbor):", [bin["Bin ID"] for bin in initial_route])
+    print("Initial Distance:", round(initial_distance, 2), "km")
+
+    # Optimize with 2-opt
+    optimized_route = two_opt(initial_route, calculate_distance)
+    optimized_distance = sum(
+        calculate_distance(optimized_route[i], optimized_route[i + 1])
+        for i in range(len(optimized_route) - 1)
+    )
+    print("Optimized Route (2-opt):", [bin["Bin ID"] for bin in optimized_route])
+    print("Optimized Distance:", round(optimized_distance, 2), "km")
+
+    # Calculate costs for the initial and optimized routes
+    initial_gas_cost, initial_labor_cost, initial_time_hours = calculate_costs(initial_distance)
+    optimized_gas_cost, optimized_labor_cost, optimized_time_hours = calculate_costs(optimized_distance)
+
+    # Calculate savings
+    gas_savings = initial_gas_cost - optimized_gas_cost
+    labor_savings = initial_labor_cost - optimized_labor_cost
+    total_savings = gas_savings + labor_savings
+
+    # Visualize the routes on a map
+    map_center = (optimized_route[0]["Latitude"], optimized_route[0]["Longitude"])
+    route_map = folium.Map(location=map_center, zoom_start=12)
+
+    # Add markers for each bin with larger popup text
+    for bin in optimized_route:
+        popup_content = f"""
+        <div style="font-size: 16px; font-weight: bold;">
+            Bin ID: {bin['Bin ID']}<br>
+            Fill Level: {bin['Fill Level']}%<br>
+            Location: ({bin['Latitude']}, {bin['Longitude']})
+        </div>
+        """
+        popup = folium.Popup(popup_content, max_width=300)
+        folium.Marker(
+            [bin["Latitude"], bin["Longitude"]],
+            popup=popup
+        ).add_to(route_map)
+
+    # Draw the initial route on the map (in blue)
+    for i in range(len(initial_route) - 1):
+        bin1 = initial_route[i]
+        bin2 = initial_route[i + 1]
+        coords = f"{bin1['Longitude']},{bin1['Latitude']};{bin2['Longitude']},{bin2['Latitude']}"
+        osrm_url = OSRM_BASE_URL + coords + "?overview=full&geometries=geojson"
+        try:
+            response = requests.get(osrm_url)
+            response.raise_for_status()
+            route_data = response.json()
+            route_coords = [
+                (point[1], point[0])  # Convert (lon, lat) to (lat, lon) for folium
+                for point in route_data["routes"][0]["geometry"]["coordinates"]
+            ]
+            folium.PolyLine(route_coords, color="blue", weight=2.5, opacity=0.8).add_to(route_map)
+        except Exception as e:
+            print(f"Error fetching initial route from {bin1['Bin ID']} to {bin2['Bin ID']}: {e}")
+
+    # Draw the optimized route on the map (in green)
+    for i in range(len(optimized_route) - 1):
+        bin1 = optimized_route[i]
+        bin2 = optimized_route[i + 1]
+        coords = f"{bin1['Longitude']},{bin1['Latitude']};{bin2['Longitude']},{bin2['Latitude']}"
+        osrm_url = OSRM_BASE_URL + coords + "?overview=full&geometries=geojson"
+        try:
+            response = requests.get(osrm_url)
+            response.raise_for_status()
+            route_data = response.json()
+            route_coords = [
+                (point[1], point[0])  # Convert (lon, lat) to (lat, lon) for folium
+                for point in route_data["routes"][0]["geometry"]["coordinates"]
+            ]
+            folium.PolyLine(route_coords, color="green", weight=2.5, opacity=0.8).add_to(route_map)
+        except Exception as e:
+            print(f"Error fetching optimized route from {bin1['Bin ID']} to {bin2['Bin ID']}: {e}")
+
+    # Add a map-wide popup for route summary
+    summary_html = f"""
+    <div style="position: absolute; top: 10px; right: 10px; z-index: 1000; background-color: black;
+                color: white; padding: 10px; border: 2px solid white; border-radius: 5px; font-size: 14px;">
+        <p><b>Route Information:</b></p>
+        <p><b>Initial Distance:</b> {round(initial_distance, 2)} km</p>
+        <p><b>Optimized Distance:</b> {round(optimized_distance, 2)} km</p>
+        <p><b>Distance Saved:</b> {round(initial_distance - optimized_distance, 2)} km</p>
+        <p><b>Gas Cost Before:</b> CAD ${round(initial_gas_cost, 2)}</p>
+        <p><b>Gas Cost After:</b> CAD ${round(optimized_gas_cost, 2)}</p>
+        <p><b>Labor Cost Before:</b> CAD ${round(initial_labor_cost, 2)}</p>
+        <p><b>Labor Cost After:</b> CAD ${round(optimized_labor_cost, 2)}</p>
+        <p><b>Total Savings:</b> CAD ${round(total_savings, 2)}</p>
+        <p style="color: green;"><b>Optimized Route:</b> Green</p>
+        <p style="color: blue;"><b>Initial Route:</b> Blue</p>
+    </div>
+    """
+    route_map.get_root().html.add_child(folium.Element(summary_html))
+
+    # Save the map
+    route_map.save("optimized_route_map.html")
+    print("Map saved to optimized_route_map.html")
+else:
+    print("No bins meet the threshold for collection.")
+    ]
+            folium.PolyLine(route_coords, color="blue", weight=2.5, opacity=0.8).add_to(route_map)
+        except Exception as e:
+            print(f"Error fetching initial route from {bin1['Bin ID']} to {bin2['Bin ID']}: {e}")
+
+    # Draw the optimized route on the map (in green)
+    for i in range(len(optimized_route) - 1):
+        bin1 = optimized_route[i]
+        bin2 = optimized_route[i + 1]
+        coords = f"{bin1['Longitude']},{bin1['Latitude']};{bin2['Longitude']},{bin2['Latitude']}"
+        osrm_url = OSRM_BASE_URL + coords + "?overview=full&geometries=geojson"
+        try:
+            response = requests.get(osrm_url)
+            response.raise_for_status()
+            route_data = response.json()
+            route_coords = [
+                (point[1], point[0])  # Convert (lon, lat) to (lat, lon) for folium
+                for point in route_data["routes"][0]["geometry"]["coordinates"]
+            ]
+            folium.PolyLine(route_coords, color="green", weight=2.5, opacity=0.8).add_to(route_map)
+        except Exception as e:
+            print(f"Error fetching optimized route from {bin1['Bin ID']} to {bin2['Bin ID']}: {e}")
+
+    # Add a map-wide popup for route summary
+    summary_html = f"""
+    <div style="position: absolute; top: 10px; right: 10px; z-index: 1000; background-color: black;
+                color: white; padding: 10px; border: 2px solid white; border-radius: 5px; font-size: 14px;">
+        <p><b>Route Information:</b></p>
+        <p><b>Initial Distance:</b> {round(initial_distance, 2)} km</p>
+        <p><b>Optimized Distance:</b> {round(optimized_distance, 2)} km</p>
+        <p><b>Distance Saved:</b> {round(initial_distance - optimized_distance, 2)} km</p>
+        <p><b>Gas Cost Before:</b> CAD ${round(initial_gas_cost, 2)}</p>
+        <p><b>Gas Cost After:</b> CAD ${round(optimized_gas_cost, 2)}</p>
+        <p><b>Labor Cost Before:</b> CAD ${round(initial_labor_cost, 2)}</p>
+        <p><b>Labor Cost After:</b> CAD ${round(optimized_labor_cost, 2)}</p>
+        <p><b>Total Savings:</b> CAD ${round(total_savings, 2)}</p>
+        <p style="color: green;"><b>Optimized Route:</b> Green</p>
+        <p style="color: blue;"><b>Initial Route:</b> Blue</p>
+    </div>
+    """
+    route_map.get_root().html.add_child(folium.Element(summary_html))
+
+    # Save the map
+    route_map.save("optimized_route_map.html")
+    print("Map saved to optimized_route_map.html")
+else:
+    print("No bins meet the threshold for collection.")

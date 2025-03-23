@@ -1,0 +1,20 @@
+{
+    "Initial Route": [
+        "B001",
+        "B003",
+        "B005",
+        "B004",
+        "B008"
+    ],
+    "Initial Distance (km)": 45.44,
+    "Optimized Route": [
+        "B001",
+        "B004",
+        "B005",
+        "B003",
+        "B008"
+    ],
+    "Optimized Distance (km)": 31.97,
+    "Distance Difference (km)": 13.47,
+    "Time Saved (minutes)": 20.21
+}

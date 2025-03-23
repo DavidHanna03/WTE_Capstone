@@ -1,0 +1,14 @@
+[
+    { "Bin ID": "B001", "Fill Level": 95, "Latitude": 43.8561, "Longitude": -79.3370 },
+    { "Bin ID": "B002", "Fill Level": 93, "Latitude": 43.8668, "Longitude": -79.2950 },
+    { "Bin ID": "B003", "Fill Level": 100, "Latitude": 43.8417, "Longitude": -79.3713 },
+    { "Bin ID": "B004", "Fill Level": 90, "Latitude": 43.8728, "Longitude": -79.2635 },
+    { "Bin ID": "B005", "Fill Level": 91, "Latitude": 43.8006, "Longitude": -79.3168 },
+
+    { "Bin ID": "B006", "Fill Level": 60, "Latitude": 43.8787, "Longitude": -79.4403 },
+    { "Bin ID": "B007", "Fill Level": 50, "Latitude": 43.9201, "Longitude": -79.4286 },
+    { "Bin ID": "B008", "Fill Level": 98, "Latitude": 43.9162, "Longitude": -79.4487 },
+
+    { "Bin ID": "B009", "Fill Level": 75, "Latitude": 43.9683, "Longitude": -79.2509 },
+    { "Bin ID": "B010", "Fill Level": 60, "Latitude": 44.0031, "Longitude": -79.2970 }
+]

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_5d4a883db11ede0f1bf2f08050cede69 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+        <div style="position: fixed; top: 10px; right: 10px; width: 300px; height: auto; 
+        background-color: white; padding: 10px; z-index: 1000; border-radius: 5px; font-size: 14px;">
+        <b>Truck 1 (Markham) Summary:</b><br>
+        🚛 Initial Distance: 50 km<br>
+        🛣 Optimized Distance: 35 km<br>
+        📉 Distance Saved: 15 km<br>
+        ⛽ Fuel Cost Before: CAD$22.80<br>
+        ⛽ Fuel Cost After: CAD$15.96<br>
+        💰 Savings: CAD$6.84<br>
+        ⌛ Labor Hours Saved: 0.75 hrs
+        </div>
+        
+        <div style="position: fixed; bottom: 10px; right: 10px; width: 300px; height: auto; 
+        background-color: white; padding: 10px; z-index: 1000; border-radius: 5px; font-size: 14px;">
+        <b>Truck 2 (Richmond Hill) Summary:</b><br>
+        🚛 Initial Distance: 50 km<br>
+        🛣 Optimized Distance: 35 km<br>
+        📉 Distance Saved: 15 km<br>
+        ⛽ Fuel Cost Before: CAD$22.80<br>
+        ⛽ Fuel Cost After: CAD$15.96<br>
+        💰 Savings: CAD$6.84<br>
+        ⌛ Labor Hours Saved: 0.75 hrs
+        </div>
+        
+    
+            <div class="folium-map" id="map_5d4a883db11ede0f1bf2f08050cede69" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_5d4a883db11ede0f1bf2f08050cede69 = L.map(
+                "map_5d4a883db11ede0f1bf2f08050cede69",
+                {
+                    center: [43.89, -79.39],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 12,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_609e2892189cff80ca722a93e7b5cbaa = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 19, "maxZoom": 19, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            );
+        
+    
+            tile_layer_609e2892189cff80ca722a93e7b5cbaa.addTo(map_5d4a883db11ede0f1bf2f08050cede69);
+        
+    
+            var poly_line_f4e93f60cc92d84c82dca40fea26f993 = L.polyline(
+                [[43.8563, -79.337], [43.8643, -79.3021], [43.9191, -79.319], [43.8952, -79.2443], [43.8576, -79.2813]],
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_5d4a883db11ede0f1bf2f08050cede69);
+        
+    
+            var poly_line_14cb451400eae6d7ac98d8d6cddfa0af = L.polyline(
+                [[43.8783, -79.4402], [43.9021, -79.4121], [43.9165, -79.4355], [43.8819, -79.4525], [43.8565, -79.47]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_5d4a883db11ede0f1bf2f08050cede69);
+        
+</script>
+</html>
